@@ -1,6 +1,6 @@
 import numpy as np
 
-# b: Simulation
+# c: Simulation
 distribution = np.zeros(91)                                 # Initialize the distribution with zero's
 distribution[0] = 1                                         # The starting point is the first state
 failure_probs = [i / 100 for i in range(10, 101)]           # Vector with the failure rate at all different states

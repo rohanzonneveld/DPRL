@@ -33,13 +33,14 @@ while True:
 
     # Construct matrix A and vector b
     # V + phi = r + P*V
+    # (I-P)*V + phi = r
     A = np.eye(91) - P
-    A[:,0] = 1 # change V(0) to phi
+    A[:,0] = 1 # change V(1) to phi
     b = r
 
     # Solve for V and phi
     V = np.linalg.solve(A, b)
-    V = V-V[0]
+    V[0]=0
 
     # Step 3: Improve policy
     Q = np.zeros((91,2))

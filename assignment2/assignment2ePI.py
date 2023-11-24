@@ -12,10 +12,9 @@ for i in range(90):
     P1[i,i+1] = 1 - x[i]
 P1[-1,0] = 1
 
-
 # Policy Iteration
 # Step 1: Set policy alpha
-alpha = [1]*91
+alpha = np.ones(91)
 
 # repeat 2 and 3 until convergence
 while True:
@@ -35,12 +34,12 @@ while True:
     # V + phi = r + P*V
     # (I-P)*V + phi = r
     A = np.eye(91) - P
-    A[:,0] = 1 # change V(1) to phi
+    A[:,0] = 1 # we set V(1) to 0 so we can change V(1) to phi in x matrix
     b = r
 
     # Solve for V and phi
     V = np.linalg.solve(A, b)
-    V[0]=0
+    V[0]=0 # change phi back to V(1)
 
     # Step 3: Improve policy
     Q = np.zeros((91,2))
@@ -54,8 +53,5 @@ while True:
     else:
         alpha = alpha_new
 
-print(alpha)
-
-
-
-  
+print(f'policy = {alpha}')
+print(f'V = {V}')

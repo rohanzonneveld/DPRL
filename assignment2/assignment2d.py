@@ -1,19 +1,25 @@
 import numpy as np
 
-X = [i/100 for i in range(100, 9, -1)]
-equation1 = np.array([[1] + [0] * 89 + [1]])
-coeffs = np.array(equation1)
-consts = np.ones(91)
+# construct state vector
+x = np.arange(0.1, 1.01, 0.01)
 
-for i in range(1,len(X)):
-    equation = np.zeros(91)
-    equation[i] = 1
-    equation[-1] = coeffs[-1][-1] * (1-X[i]) + 1
-    coeffs = np.vstack((coeffs, equation))
-    if i == 89:
-        print(equation)
+# create coefficient for phi in Poisson equation
+coeffs = np.zeros(92) # create matrix with extra zero to start with
+for i in range(1,92):
+    coeffs[i] = (1-x[-i])*coeffs[i-1] - 1
+coeffs = np.delete(coeffs, 0) # delete extra zero
 
-solution = np.linalg.solve(coeffs, consts)
-print(solution)
+# create A and b matrix
+A = np.eye(91) # identity as V(2) appears in equation 2 and so on
+A[:,0] = -coeffs[::-1] # replace first column with coeffs for phi since we replace V(1) with phi
+b = np.ones(91)
+
+# solve for V an phi
+V = np.linalg.solve(A, b)
+phi = V[0]
+V[0] = 0
+
+print(f'V = {V}')
+print(f'phi = {phi}')
 
 

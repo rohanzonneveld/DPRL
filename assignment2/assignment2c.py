@@ -10,3 +10,4 @@ for _ in range(100):
 
 print(f'pi* = {distribution}')
 print(f'sum(pi*) = {np.sum(distribution)}')
+print(f'phi = {distribution[0]}')

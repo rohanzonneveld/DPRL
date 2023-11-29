@@ -1,18 +1,6 @@
 import random
 from connect4 import *
 
-'''
-Notes:
-- You want to find the best action of the player to take from a given state
-- Therefore connections between states are actions of the player
-- Therefore states must always have a state where the player played last
-- What to do with the opponent's actions?
-- Proposal: every state contains substates for every possible action of the opponent
-- A new tree starts from every substate
-- The value of a state is the average value of the substates since the probability of the opponent taking a certain action is equal
-
-'''
-
 
 class Node:
     def __init__(self, state, parent=None, player=-1):
@@ -64,10 +52,9 @@ def mcts_search(state, iterations=1000, gamma=0.99):
             node = random.choice(node.children)
             
         # Simulation:
-        rollout_state = node.rollout(gamma)   
+        reward = node.rollout(gamma)   
 
         # Backpropagation
-        _, reward = is_terminal(rollout_state)
         update_nodes(node, reward) # update visits and wins
         backpropagate(node.parent, gamma) # backpropagate the value
 
@@ -87,18 +74,25 @@ def update_nodes(node, reward):
         node = node.parent
 
 def backpropagate(node, gamma):
-    while node:
-        values = []
-        if node.player == 1:
-            for child in node.children:
-                values.append(child.visits *(gamma*max(child.children, key=lambda n: n.value).value))
-        else:
-            mean_value_children = np.mean([child.value for child in node.children])
-            for child in node.children:
-                values.append(child.visits * (child.wins + gamma*mean_value_children))
-        
-        node.value = np.sum(values)/node.visits
-        node = node.parent
+    while node.parent:
+        # skip function if not all children of node have children
+        if not all([child.children for child in node.children]):
+            node = node.parent
+            continue
+        else:       
+            values = []
+            if node.player == -1:
+                # calculate the value according to Q(x,a), use max value of grandchildren since child is players action
+                for child in node.children:
+                    values.append(child.visits *(gamma*max(child.children, key=lambda n: n.value).value))
+            else:
+                # calculate the value according to Q(x,a), use mean value of children since child is opponents (random) action
+                for child in node.children:
+                    mean_value_grandchildren = np.mean([grandchild.value for grandchild in child.children])
+                    values.append(child.visits * (gamma*mean_value_grandchildren))
+            
+            node.value = np.sum(values)/node.visits
+            node = node.parent
 
 def transition(state, action):
     # apply the action of the player to the state
@@ -119,7 +113,8 @@ state = np.zeros((6, 7), dtype=np.int8)
 player = -1
 while not is_terminal(state)[0]:
     if player == -1:
-        action = random.choice(get_actions(state))
+        # action = random.choice(get_actions(state))
+        action = int(input('Enter action: ')) - 1
         state = apply_action(state, action, player)
     else:
         state = mcts_search(state)

@@ -31,15 +31,15 @@ class Node:
         state = self.state.copy()
         player = self.player
         moves = 0
-        while not is_terminal(state)[0]:
+        finished, reward = is_terminal(state)
+        while not finished:
             action = random.choice(get_actions(state))
             state = apply_action(state, action, player)
             player *= -1
             moves += 1
+            finished, reward = is_terminal(state)
 
-        _, reward = is_terminal(state)
-        if reward == 1:
-            self.value = (gamma**moves) * reward
+        self.value = (gamma**moves) * reward
         
         return reward
 

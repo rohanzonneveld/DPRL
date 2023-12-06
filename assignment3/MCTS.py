@@ -1,4 +1,5 @@
 import random
+import matplotlib.pyplot as plt
 from connect4 import *
 
 
@@ -61,6 +62,7 @@ def mcts_search(state, iterations=1000, gamma=0.99):
         update_nodes(node, reward) # update visits and wins
         backpropagate(node.parent, gamma) # backpropagate the value
         cache.append(root.value)
+    visualize_convergence(cache)
     for child in root.children:
         print(f'Action: {child.action+1}, \n Win probability: {child.wins/child.visits} \n')
 
@@ -127,6 +129,31 @@ def converged(cache, window_size=10, tolerance=1e-6):
 
     return abs(cache[-1] - recent_mean) < tolerance
 
+def visualize_board(board):
+    cmap = plt.get_cmap('tab20')  # Color map for players
+
+    # Create a plot and set the size of the figure
+    plt.figure(figsize=(7, 6))
+
+    # Draw the board
+    plt.imshow(board, cmap=cmap)
+
+    # Show player discs
+    for i in range(board.shape[0]):
+        for j in range(board.shape[1]):
+            if board[i, j] == 1:
+                plt.scatter(j, i, s=400, marker='o', c='blue', edgecolors='black')
+            elif board[i, j] == -1:
+                plt.scatter(j, i, s=400, marker='o', c='green', edgecolors='black')
+
+    # plt.gca().invert_yaxis()  # Invert the y-axis to match the board orientation
+    plt.axis('off')  # Turn off axis labels
+    plt.show() 
+
+def visualize_convergence(values):
+    plt.figure()
+    plt.plot(values)
+    plt.show()
 
 # Play a game of a random agent against MCTS
 # state = np.zeros((6, 7), dtype=np.int8)
@@ -146,7 +173,8 @@ while not is_terminal(state)[0]:
         action = mcts_search(state)
         state = apply_action(state, action, player)
     print('\n\n')
-    print(np.flipud(state))
+    # print(np.flipud(state))
+    visualize_board(np.flipud(state))
     
     player *= -1
 

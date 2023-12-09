@@ -34,14 +34,14 @@ class Node:
         
         return reward
 
-def mcts_search(state, iterations=1000, gamma=0.99):
+def mcts_search(state, iterations=1000, gamma=0.99, show_results=True):
     root = Node(state, player=1)
     cache = []
 
     while not converged(cache):
         node = root
         # Selection: select a leaf node
-        while not is_terminal(node.state)[0] and node.children:
+        while node.children: # not is_terminal(node.state)[0] and
             if node.player == 1:
                 node = max(node.children, key=lambda n: UCB(n))
             else:
@@ -62,9 +62,12 @@ def mcts_search(state, iterations=1000, gamma=0.99):
         update_nodes(node, reward) # update visits and wins
         backpropagate(node.parent, gamma) # backpropagate the value
         cache.append(root.value)
-    visualize_convergence(cache)
-    for child in root.children:
-        print(f'Action: {child.action+1}, \n Win probability: {child.wins/child.visits} \n')
+    
+    # visualize model parameters
+    if show_results:
+        visualize_convergence(cache)
+        for child in root.children:
+            print(f'Action: {child.action+1}, \n Win probability: {child.wins/child.visits} \n Q-value: {child.value} \n')
 
     # Select the action with the highest average value
     return max(root.children, key=lambda n: n.value).action
@@ -96,38 +99,33 @@ def backpropagate(node, gamma):
         else:
             # calculate the value according to Q(x,a), use mean value of children since child is opponents (random) action
             for child in node.children:
+                
+                # minmax
+                try:
+                    min_value_children = min(child.children, key=lambda n: n.value).value
+                except:
+                    min_value_children = 0
 
-                mean_value_grandchildren = np.mean([grandchild.value for grandchild in child.children])
-                if np.isnan(mean_value_grandchildren): mean_value_grandchildren = 0
-                values.append(child.visits * (gamma*mean_value_grandchildren))
+                values.append(child.visits *(gamma*min_value_children))
+
+                # # mean for opponent
+                # mean_value_grandchildren = np.mean([grandchild.value for grandchild in child.children])
+                # if np.isnan(mean_value_grandchildren): mean_value_grandchildren = 0
+                # values.append(child.visits * (gamma*mean_value_grandchildren))
         
         node.value = np.sum(values)/node.visits
         node = node.parent
 
-def transition(state, action):
-    # apply the action of the player to the state
-    state = apply_action(state, action, 1)
-
-    # check if the game is over
-    if is_terminal(state)[0]:
-        return state
-    
-    # apply the random action of the opponent to the state
-    opponents_action = random.choice(get_actions(state))
-    state = apply_action(state, opponents_action, -1)
-
-    return state
-
-def converged(cache, window_size=10, tolerance=1e-6):
+def converged(cache, window_size=10, tolerance=1e-4):
     cache = np.array(cache)
 
     if cache.shape[0] < window_size:
         return False
 
-    recent_values = cache[-window_size:-1]
-    recent_mean = np.mean(recent_values)
+    recent_values = cache[-window_size:]
+    
 
-    return abs(cache[-1] - recent_mean) < tolerance
+    return np.max(recent_values) - np.min(recent_values) < tolerance
 
 def visualize_board(board):
     cmap = plt.get_cmap('tab20')  # Color map for players
@@ -155,35 +153,39 @@ def visualize_convergence(values):
     plt.plot(values)
     plt.show()
 
-# Play a game of a random agent against MCTS
-# state = np.zeros((6, 7), dtype=np.int8)
-state = np.array([[ -1, 1,  1,  1, -1, -1,  1],
-                  [ 0,  1, -1, -1,  1, -1,  0],
-                  [ 0,  1,  1,  1, -1,  1,  0],
-                  [ 0, -1, -1, -1,  1, -1,  0],
-                  [ 0,  1,  1, -1, -1,  1,  0],
-                  [ 0,  1, -1, -1,  1, -1,  0]], dtype=np.int8)
-player = 1
-while not is_terminal(state)[0]:
-    if player == -1:
-        action = random.choice(get_actions(state))
-        # action = int(input('Enter action: ')) - 1
-        state = apply_action(state, action, player)
-    else:
-        action = mcts_search(state)
-        state = apply_action(state, action, player)
-    print('\n\n')
-    # print(np.flipud(state))
-    visualize_board(np.flipud(state))
+
+if __name__ == '__main__':
+    # Play a game of a random agent against MCTS
+    starting_player = 'MCTS'
+    state0 = np.zeros((6, 7), dtype=np.int8)
+    state1 = np.array([[ -1,  1,  1,  1, -1, -1,  1],
+                        [ 0,  1, -1, -1,  1, -1,  0],
+                        [ 0,  1,  1,  1, -1,  1,  0],
+                        [ 0, -1, -1, -1,  1, -1,  0],
+                        [ 0,  1,  1, -1, -1,  1,  0],
+                        [ 0,  1, -1, -1,  1, -1,  0]], dtype=np.int8)
+
     
-    player *= -1
+    player = 1 if starting_player=='MCTS' else -1
+    state = state1 # state0 for empty board
+    while not is_terminal(state)[0]:
+        if player == -1:
+            action = random.choice(get_actions(state))
+            # uncomment if you want to play against the MCTS agent
+            action = int(input('Enter action: ')) - 1
 
-if is_terminal(state)[1] == 1:
-    print('MCTS won!')
-elif is_terminal(state)[1] == -1:
-    print('Random agent won!')
-else:
-    print('Draw!')
+            state = apply_action(state, action, player)
+        else:
+            action = mcts_search(state, show_results=True)
+            print(f"MCTS's action: {action+1}")
+            state = apply_action(state, action, player)
+        visualize_board(np.flipud(state))
+        
+        player *= -1
 
-
-
+    if is_terminal(state)[1] == 1:
+        print('MCTS won!')
+    elif is_terminal(state)[1] == -1:
+        print('Random agent won!')
+    else:
+        print('Draw!')

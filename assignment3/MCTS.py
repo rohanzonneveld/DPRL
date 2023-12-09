@@ -151,10 +151,13 @@ def visualize_board(board):
 def visualize_convergence(values):
     plt.figure()
     plt.plot(values)
+    plt.xlabel('Number of iterations')
+    plt.ylabel('Q-value')
     plt.show()
 
 
 if __name__ == '__main__':
+    random.seed(38) # Set seed
     # Play a game of a random agent against MCTS
     starting_player = 'MCTS'
     state0 = np.zeros((6, 7), dtype=np.int8)
@@ -165,14 +168,14 @@ if __name__ == '__main__':
                         [ 0,  1,  1, -1, -1,  1,  0],
                         [ 0,  1, -1, -1,  1, -1,  0]], dtype=np.int8)
 
-    
+    visualize_board(np.flipud(state1))
     player = 1 if starting_player=='MCTS' else -1
     state = state1 # state0 for empty board
     while not is_terminal(state)[0]:
         if player == -1:
             action = random.choice(get_actions(state))
             # uncomment if you want to play against the MCTS agent
-            action = int(input('Enter action: ')) - 1
+            # action = int(input('Enter action: ')) - 1
 
             state = apply_action(state, action, player)
         else:

@@ -34,16 +34,16 @@ class Node:
         
         return reward
 
-def mcts_search(state, iterations=1000, gamma=0.99, show_results=True):
+def mcts_search(state, gamma=0.99, show_results=True, epsilon=1e-4, exploration_constant=1.0):
     root = Node(state, player=1)
     cache = []
 
-    while not converged(cache):
+    while not converged(cache, tolerance=epsilon):
         node = root
         # Selection: select a leaf node
         while node.children: # not is_terminal(node.state)[0] and
             if node.player == 1:
-                node = max(node.children, key=lambda n: UCB(n))
+                node = max(node.children, key=lambda n: UCB(n, exploration_constant))
             else:
                 node = min(node.children, key=lambda n: n.visits)
 
@@ -72,10 +72,10 @@ def mcts_search(state, iterations=1000, gamma=0.99, show_results=True):
     # Select the action with the highest average value
     return max(root.children, key=lambda n: n.value).action
 
-def UCB(node, exploration_weight=1.0):
+def UCB(node, exploration_constant=1.0):
     if node.visits == 0:
         return float('inf')
-    return node.wins / node.visits + exploration_weight * np.sqrt(np.log(node.parent.visits) / node.visits)
+    return node.wins / node.visits + exploration_constant * np.sqrt(np.log(node.parent.visits) / node.visits)
 
 def update_nodes(node, reward):
     while node:
@@ -176,7 +176,7 @@ if __name__ == '__main__':
 
             state = apply_action(state, action, player)
         else:
-            action = mcts_search(state, show_results=True)
+            action = mcts_search(state, show_results=True, epsilon=1e-4, exploration_constant=2., gamma=0.9)
             print(f"MCTS's action: {action+1}")
             state = apply_action(state, action, player)
         visualize_board(np.flipud(state))

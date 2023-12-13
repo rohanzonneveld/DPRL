@@ -20,15 +20,11 @@ def calculate_reward(policy):
 def objective(trial):
     alpha = trial.suggest_uniform('alpha', 0.0, 1.0)
     epsilon = trial.suggest_uniform('epsilon', 0.0, 1.0)
-    num_episodes = trial.suggest_int('num_episodes', 0, 1000)
-    rewards = []
-    for i in range(10):
-        policy = learnQ(alpha=alpha, epsilon=epsilon, gamma=0.9, num_episodes=num_episodes)
-        reward = calculate_reward(policy)
-        rewards.append(reward)
-    reward = sum(rewards) / len(rewards)
+    # num_episodes = trial.suggest_int('num_episodes', 0, 1000)
+    policy, Q = learnQ(alpha=alpha, epsilon=epsilon, gamma=0.9)
+    reward = calculate_reward(policy)
     return reward
 
 study = optuna.create_study(direction='minimize')
-study.optimize(objective, n_trials=250)
+study.optimize(objective, n_trials=10)
 print(study.best_params)

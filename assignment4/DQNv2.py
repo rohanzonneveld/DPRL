@@ -68,7 +68,7 @@ class QNetwork(tf.keras.Model):
         return self.output_layer(x)
 
 class DQNAgent:
-    def __init__(self, state_size, action_size, gamma=0.9, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, alpha=0.001, batch_size=32, replay_memory_size=1000, target_update_frequency=10):
+    def __init__(self, state_size, action_size, gamma=0.9, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, alpha=0.001, batch_size=8, replay_memory_size=1000, target_update_frequency=10):
         self.state_size = state_size
         self.action_size = action_size
         self.gamma = gamma
@@ -79,6 +79,8 @@ class DQNAgent:
         self.batch_size = batch_size
         self.replay_memory_size = replay_memory_size
         self.target_update_frequency = target_update_frequency
+        self.policy = None
+        self.Q = None
 
         self.model = QNetwork(state_size, action_size)
         self.model.compile(loss='mse', optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=self.alpha))
@@ -125,6 +127,22 @@ class DQNAgent:
     def update_target_model(self):
         self.target_model.set_weights(self.model.get_weights())
 
+    def calculate_policy(self):
+        Q = np.empty((5, 5, 4))
+        policy = np.empty((5, 5), dtype=np.int8)
+        for i in range(5):
+            for j in range(5):
+                Q[i, j, :] = self.target_model.call(tf.convert_to_tensor((i, j)))
+                policy[i, j] = np.argmax(Q[i, j, :])
+
+        self.Q = Q
+        if np.array_equal(policy, self.policy):
+            return True
+        else:
+            self.policy = policy
+            return False
+        
+
     def train(self, num_episodes):
         for episode in range(num_episodes):
             state = env.reset()
@@ -148,8 +166,12 @@ class DQNAgent:
 
             if episode % self.target_update_frequency == 0:
                 self.update_target_model()
+                stop = self.calculate_policy()
+                print(self.policy)
 
             print(f"Episode: {episode + 1}, #steps: {steps}")
+            if stop:
+                break
 
 # set up environment
 env = MiniMazeEnvironment(grid_size=5)
@@ -161,13 +183,13 @@ agent = DQNAgent(state_size, action_size, target_update_frequency=5)
 agent.train(num_episodes=50)
 
 # extract policy from Q-values
-Q = np.empty((5, 5, 4))
-policy = np.empty((5, 5), dtype=np.int8)
-for i in range(5):
-    for j in range(5):
-        Q[i, j, :] = agent.target_model.call(tf.convert_to_tensor((i, j)))
-        policy[i, j] = np.argmax(Q[i, j, :])
+# Q = np.empty((5, 5, 4))
+# policy = np.empty((5, 5), dtype=np.int8)
+# for i in range(5):
+#     for j in range(5):
+#         Q[i, j, :] = agent.target_model.call(tf.convert_to_tensor((i, j)))
+#         policy[i, j] = np.argmax(Q[i, j, :])
 
 print('\nOptimal policy:\n')
-print(policy)
-plot_Q(Q)
+print(agent.policy)
+plot_Q(agent.Q)

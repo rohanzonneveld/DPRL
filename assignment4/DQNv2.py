@@ -1,21 +1,8 @@
 import numpy as np
-import os
-os.environ['TF_CPP_MIN_LOG_LEVEL'] = '2'
-os.environ['TF_FORCE_GPU_ALLOW_GROWTH'] = 'true'
-
 import tensorflow as tf
-# tf.config.threading.set_inter_op_parallelism_threads(1)
-# tf.config.threading.set_intra_op_parallelism_threads(1)
-# physical_devices = tf.config.list_physical_devices('GPU')
-# if physical_devices:
-#     tf.config.experimental.set_memory_growth(physical_devices[0], True)
-# from tf.keras.callbacks import ModelCheckpoint
-
-
 
 import numpy as np
 import random
-import matplotlib.pyplot as plt
 from collections import deque
 from plot import plot_Q
 
@@ -65,13 +52,12 @@ class MiniMazeEnvironment:
         return (x, y)
     
     def one_hot_encode_state(self, state):
-        return tf.one_hot(state[0] * self.grid_size + state[1], depth=self.num_states, dtype=tf.int8)
+        return tf.convert_to_tensor(state)#tf.one_hot(state[0] * self.grid_size + state[1], depth=self.num_states, dtype=tf.int8)
 
-# Define the Q-network model
 class QNetwork(tf.keras.Model):
     def __init__(self, state_size, action_size):
         super(QNetwork, self).__init__()
-        initializer = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.05)  
+        initializer = tf.keras.initializers.RandomNormal(mean=0.0, stddev=0.05, seed=123)  
         self.dense1 = tf.keras.layers.Dense(24, activation='relu', input_shape=(state_size,), kernel_initializer=initializer, bias_initializer=initializer)
         self.dense2 = tf.keras.layers.Dense(24, activation='relu', kernel_initializer=initializer, bias_initializer=initializer)
         self.output_layer = tf.keras.layers.Dense(action_size, activation='linear', kernel_initializer=initializer, bias_initializer=initializer)
@@ -81,7 +67,6 @@ class QNetwork(tf.keras.Model):
         x = self.dense2(x)
         return self.output_layer(x)
 
-# Define the Deep Q-Learning agent
 class DQNAgent:
     def __init__(self, state_size, action_size, gamma=0.9, epsilon=1.0, epsilon_min=0.01, epsilon_decay=0.995, alpha=0.001, batch_size=32, replay_memory_size=1000, target_update_frequency=10):
         self.state_size = state_size
@@ -110,7 +95,7 @@ class DQNAgent:
         if np.random.rand() <= self.epsilon:
             return random.randrange(self.action_size)
         else:
-            q_values = self.model.call(env.one_hot_encode_state(state))
+            q_values = self.model.call(tf.convert_to_tensor(state))
             return np.argmax(q_values[0])
 
     def remember(self, state, action, reward, next_state):
@@ -125,11 +110,11 @@ class DQNAgent:
         states, targets = [], []
 
         for state, action, reward, next_state in minibatch:
-            target = np.array(self.target_model.call(env.one_hot_encode_state(state)))[0]
-            next_q_values = self.target_model.call(env.one_hot_encode_state(next_state))
+            target = np.array(self.target_model.call(tf.convert_to_tensor(state)))[0]
+            next_q_values = self.target_model.call(tf.convert_to_tensor(next_state))
             target[action] = reward + self.gamma * np.max(next_q_values[0])
 
-            states.append(env.one_hot_encode_state(state))
+            states.append(tf.convert_to_tensor(state))
             targets.append(target)
 
         states = tf.convert_to_tensor(np.array(states), dtype=tf.int8)
@@ -166,19 +151,23 @@ class DQNAgent:
 
             print(f"Episode: {episode + 1}, #steps: {steps}")
 
+# set up environment
 env = MiniMazeEnvironment(grid_size=5)
-state_size = env.num_states
+state_size = 2 # x and y coordinates
 action_size = env.num_actions
 
-agent = DQNAgent(state_size, action_size, target_update_frequency=2)
-agent.train(num_episodes=20)
+# train agent
+agent = DQNAgent(state_size, action_size, target_update_frequency=5)
+agent.train(num_episodes=50)
 
 # extract policy from Q-values
 Q = np.empty((5, 5, 4))
 policy = np.empty((5, 5), dtype=np.int8)
 for i in range(5):
     for j in range(5):
-        Q[i, j, :] = agent.target_model.call(env.one_hot_encode_state((i, j)))
+        Q[i, j, :] = agent.target_model.call(tf.convert_to_tensor((i, j)))
         policy[i, j] = np.argmax(Q[i, j, :])
+
+print('\nOptimal policy:\n')
 print(policy)
 plot_Q(Q)

@@ -1,5 +1,7 @@
 import numpy as np
 import random
+from collections import deque
+
 
 def take_action(state, action):
     if action == 'up':
@@ -17,16 +19,21 @@ def take_action(state, action):
 
     return state, reward
 
+def converged(cache):
+    if len(cache) < 2:
+        return False
+    else:
+        return np.linalg.norm(cache[0] - cache[1]) < 1e-20
 
-def learnQ(alpha=0.1, epsilon=0.4, gamma=0.9, num_episodes=1000):
+def learnQ(alpha=0.1, epsilon=1, gamma=0.9):
     # Initialize Q-values randomly
-    Q = np.ones((3, 3, 4)) # TODO: initialize with ones is important!
+    Q = np.zeros((3, 3, 4)) # TODO: initialize with ones is important!
+    cache = deque(maxlen=2)
     actions = ['up', 'down', 'left', 'right']
     initial_state = (2, 0)  
 
-
     # Perform Q-learning updates
-    for episode in range(num_episodes):
+    while not converged(cache):
         current_state = initial_state
         terminal_state = False
         while not terminal_state:
@@ -45,6 +52,7 @@ def learnQ(alpha=0.1, epsilon=0.4, gamma=0.9, num_episodes=1000):
             
             # Move to the next state
             current_state = next_state
+        cache.append(Q.copy())
 
     # Extract policy from Q-values
     policy = np.argmax(Q, axis=2)
@@ -65,7 +73,7 @@ if __name__ == '__main__':
     #             num += 1
     # print(num)
 
-    policy, Q = learnQ(alpha=0.3692571602027527, epsilon=0.3692148745343658, gamma=0.9, num_episodes=1)
+    policy, Q = learnQ()
     print(policy)
     print(Q)
 

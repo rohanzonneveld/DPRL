@@ -18,17 +18,12 @@ def take_action(state, action):
     return state, reward
 
 
-def learnQ(alpha, epsilon, gamma, num_episodes=1000):
+def learnQ(alpha=0.1, epsilon=0.4, gamma=0.9, num_episodes=1000):
     # Initialize Q-values randomly
     Q = np.ones((3, 3, 4)) # TODO: initialize with ones is important!
     actions = ['up', 'down', 'left', 'right']
     initial_state = (2, 0)  
-    num_episodes = 100
 
-    # Set parameters
-    # alpha = 0.1  # Learning rate
-    # epsilon = 0.2  # Exploration-exploitation trade-off
-    # gamma = 0.9  # Discount factor
 
     # Perform Q-learning updates
     for episode in range(num_episodes):
@@ -55,33 +50,23 @@ def learnQ(alpha, epsilon, gamma, num_episodes=1000):
     policy = np.argmax(Q, axis=2)
     return policy, Q
 
-def calculate_reward(policy):
-    reward = 0
-    if policy[2,0] == 0 or policy[2,0] == 3: reward += 1
-    if policy[2,1] == 0 or policy[2,1] == 3: reward += 1
-    if policy[2,2] == 0: reward += 1
-    if policy[1,0] == 0 or policy[1,0] == 3: reward += 1
-    if policy[1,1] == 0 or policy[1,1] == 3: reward += 1
-    if policy[1,2] == 0: reward += 1
-    if policy[0,0] == 3: reward += 1
-    if policy[0,1] == 3: reward += 1
-
-    return reward
-
 if __name__ == '__main__':
-    random.seed(42)
-    np.random.seed(42)
-    num = 0
-    alphas = [i * 0.1 for i in range(1, 11)]
-    epsilons = [i * 0.1 for i in range(1, 11)]
-    for alpha in alphas:
-        for epsilon in epsilons:
-            policy, Q = learnQ(alpha=alpha, epsilon=epsilon, gamma=0.9)
-            reward = calculate_reward(policy)
-            print(f"alpha = {alpha:.1f}, epsilon = {epsilon:.1f}, reward = {reward}")
-            if reward < 8:
-                num += 1
-    print(num)
-    # print(Q)
+    # random.seed(42)
+    # np.random.seed(42)
+    # num = 0
+    # alphas = [i * 0.1 for i in range(1, 11)]
+    # epsilons = [i * 0.1 for i in range(1, 11)]
+    # for alpha in alphas:
+    #     for epsilon in epsilons:
+    #         policy, Q = learnQ(alpha=alpha, epsilon=epsilon, gamma=0.9)
+    #         reward = calculate_reward(policy)
+    #         print(f"alpha = {alpha:.1f}, epsilon = {epsilon:.1f}, reward = {reward}")
+    #         if reward < 8:
+    #             num += 1
+    # print(num)
+
+    policy, Q = learnQ(alpha=0.3692571602027527, epsilon=0.3692148745343658, gamma=0.9, num_episodes=1)
+    print(policy)
+    print(Q)
 
 

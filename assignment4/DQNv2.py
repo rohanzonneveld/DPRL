@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from collections import deque
-from plot import plot_Q
+from plot import plot_Q, plot_policy
 
 class MiniMazeEnvironment:
     def __init__(self, grid_size=5):
@@ -79,8 +79,9 @@ class DQNAgent:
         self.batch_size = batch_size
         self.replay_memory_size = replay_memory_size
         self.target_update_frequency = target_update_frequency
-        self.policy = None
         self.Q = None
+        self.policy = None
+        self.steps = deque(maxlen=2)
 
         self.model = QNetwork(state_size, action_size)
         self.model.compile(loss='mse', optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=self.alpha))
@@ -129,21 +130,51 @@ class DQNAgent:
 
     def calculate_policy(self):
         Q = np.empty((5, 5, 4))
+        V = np.empty((5, 5))
         policy = np.empty((5, 5), dtype=np.int8)
         for i in range(5):
             for j in range(5):
                 Q[i, j, :] = self.target_model.call(tf.convert_to_tensor((i, j)))
+                V[i, j] = np.max(Q[i, j, :])
                 policy[i, j] = np.argmax(Q[i, j, :])
 
         self.Q = Q
-        if np.array_equal(policy, self.policy):
+        self.policy = policy
+
+    def converged(self):
+        # play game according to policy and record steps
+        state = env.reset()
+        steps = 0
+
+        while True:
+            action = self.policy[state]
+            next_state, reward, done = env.step(action)
+            steps += 1
+
+            state = next_state
+
+            # stop when it has reached the goal or when policy has failed
+            if done or steps > 100:
+                break
+        
+        # only append steps if policy has succeeded
+        if done:
+            self.steps.append(steps)
+            print(f"Steps under policy: {steps}")
+        else:
+            print("Policy failed")
+
+        # check if policy has converged
+        if len(self.steps) != 2:
+            return False
+
+        if np.ptp(self.steps) == 0:
             return True
         else:
-            self.policy = policy
             return False
-        
 
-    def train(self, num_episodes):
+
+    def train(self, num_episodes=1000):
         for episode in range(num_episodes):
             state = env.reset()
             steps = 0
@@ -166,12 +197,14 @@ class DQNAgent:
 
             if episode % self.target_update_frequency == 0:
                 self.update_target_model()
-                stop = self.calculate_policy()
+                self.calculate_policy()
                 print(self.policy)
+                
+                if self.converged():
+                    break
 
             print(f"Episode: {episode + 1}, #steps: {steps}")
-            if stop:
-                break
+
 
 # set up environment
 env = MiniMazeEnvironment(grid_size=5)
@@ -180,7 +213,7 @@ action_size = env.num_actions
 
 # train agent
 agent = DQNAgent(state_size, action_size, target_update_frequency=5)
-agent.train(num_episodes=50)
+agent.train()
 
 # extract policy from Q-values
 # Q = np.empty((5, 5, 4))
@@ -193,3 +226,4 @@ agent.train(num_episodes=50)
 print('\nOptimal policy:\n')
 print(agent.policy)
 plot_Q(agent.Q)
+plot_policy(agent.Q)

@@ -52,7 +52,7 @@ class MiniMazeEnvironment:
         return (x, y)
     
     def one_hot_encode_state(self, state):
-        return tf.convert_to_tensor(state)#tf.one_hot(state[0] * self.grid_size + state[1], depth=self.num_states, dtype=tf.int8)
+        return tf.convert_to_tensor(state)
 
 class QNetwork(tf.keras.Model):
     def __init__(self, state_size, action_size):
@@ -81,7 +81,7 @@ class DQNAgent:
         self.target_update_frequency = target_update_frequency
         self.Q = None
         self.policy = None
-        # self.steps = deque(maxlen=2) # only needed for convergence check on policy
+        self.steps = deque(maxlen=2) # only needed for convergence check on policy
         self.cache = deque(maxlen=2)
         self.norms = []
 
@@ -148,6 +148,7 @@ class DQNAgent:
         self.Q = Q
         self.policy = policy
 
+    # convergence check on optimal policy
     def converged(self):
         # play game according to policy and record steps
         state = env.reset()
@@ -180,6 +181,7 @@ class DQNAgent:
         else:
             return False
 
+    # convergence check on Q-values
     def convergedQ(self, episode):
         self.calculate_policy()
         self.cache.append(self.Q)
@@ -223,7 +225,7 @@ class DQNAgent:
                 print(self.policy)
                 
                 # check for convergence of Q-values
-                if self.convergedQ(episode):
+                if self.convergedQ(episode): # change to self.converged() to check for convergence of policy
                     break
 
 
@@ -236,14 +238,6 @@ action_size = env.num_actions
 # train agent
 agent = DQNAgent(state_size, action_size, target_update_frequency=5)
 agent.train()
-
-# extract policy from Q-values
-# Q = np.empty((5, 5, 4))
-# policy = np.empty((5, 5), dtype=np.int8)
-# for i in range(5):
-#     for j in range(5):
-#         Q[i, j, :] = agent.target_model.call(tf.convert_to_tensor((i, j)))
-#         policy[i, j] = np.argmax(Q[i, j, :])
 
 print('\nOptimal policy:\n')
 print(agent.policy)

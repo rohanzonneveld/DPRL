@@ -75,8 +75,9 @@ if __name__ == '__main__':
     # print(num)
 
     policy, Q = learnQ()
+    print('Policy:')
     print(policy)
+    print('Q-values:')
     print(Q)
-    plot_policy(Q)
 
 

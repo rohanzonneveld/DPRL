@@ -86,6 +86,9 @@ def plot_policy(Q):
             elif action == 3:
                 ax.quiver(xi + 0.125, yi + 0.5, dx, 0, angles='xy', scale_units='xy', scale=1, color='blue')
 
+    # Add colorbar
+    cbar = plt.colorbar(plt.cm.ScalarMappable(norm=norm, cmap=plt.cm.viridis), ax=ax)
+    cbar.set_label('V-values')
 
     ax.set_xlim(0, size + .001)
     ax.set_ylim(0, size + .001)
@@ -93,7 +96,7 @@ def plot_policy(Q):
     ax.set_yticks(np.arange(0, size, 1))
     ax.set_aspect('equal', adjustable='box')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    plt.gca().invert_yaxis()  # Invert y-axis to match the grid representation
+    # plt.gca().invert_yaxis()  # Invert y-axis to match the grid representation
 
     plt.show()
 

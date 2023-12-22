@@ -1,5 +1,4 @@
 import optuna
-
 from tabularQlearning import learnQ
 
 def calculate_reward(policy):

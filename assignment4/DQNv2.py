@@ -4,7 +4,7 @@ import tensorflow as tf
 import numpy as np
 import random
 from collections import deque
-from plot import plot_Q, plot_policy
+from plot import plot_Q, plot_policy, plot_convergence
 
 class MiniMazeEnvironment:
     def __init__(self, grid_size=5):
@@ -81,7 +81,9 @@ class DQNAgent:
         self.target_update_frequency = target_update_frequency
         self.Q = None
         self.policy = None
-        self.steps = deque(maxlen=2)
+        # self.steps = deque(maxlen=2) # only needed for convergence check on policy
+        self.cache = deque(maxlen=2)
+        self.norms = []
 
         self.model = QNetwork(state_size, action_size)
         self.model.compile(loss='mse', optimizer=tf.keras.optimizers.legacy.Adam(learning_rate=self.alpha))
@@ -109,7 +111,7 @@ class DQNAgent:
             return
 
         minibatch = random.sample(list(self.replay_memory)[:-1], self.batch_size - 1)
-        minibatch.append(self.replay_memory[-1]) # Always select last because that is the only move that leads to a reward (necesarry so that the reward can be backpropagated through the q-values)
+        minibatch.append(self.replay_memory[-1]) # Always select last so when a reward is given it will directly be added to the minibatch (necesarry so that the reward can be backpropagated through the q-values)
         states, targets = [], []
 
         for state, action, reward, next_state in minibatch:
@@ -119,6 +121,11 @@ class DQNAgent:
 
             states.append(tf.convert_to_tensor(state))
             targets.append(target)
+
+            # manually add goal state with target 0 to set the q-value of the goal state to 0 (since no rewards are given after reaching the goal state)
+            # this has to be done manually as we stop after reaching the goal state so this (state, action) will otherwise never be in minibatch
+            states.append(tf.convert_to_tensor(env.goal_state))
+            targets.append(np.zeros(self.action_size))
 
         states = tf.convert_to_tensor(np.array(states), dtype=tf.int8)
         targets = tf.convert_to_tensor(np.array(targets), dtype=tf.float32)
@@ -173,8 +180,19 @@ class DQNAgent:
         else:
             return False
 
+    def convergedQ(self, episode):
+        self.calculate_policy()
+        self.cache.append(self.Q)
 
-    def train(self, num_episodes=1000):
+        if len(self.cache) < 2:
+            return False
+        else:
+            norm = np.linalg.norm(self.cache[0] - self.cache[1])
+            print(norm)
+            self.norms.append((episode, norm))
+            return norm < 0.01
+
+    def train(self, num_episodes=1000000):
         for episode in range(num_episodes):
             state = env.reset()
             steps = 0
@@ -191,19 +209,23 @@ class DQNAgent:
 
                 if done:
                     break
+            
+            print(f"Episode: {episode + 1}, #steps: {steps}")
 
+            # update epsilon
             if self.epsilon > self.epsilon_min:
                 self.epsilon *= self.epsilon_decay
 
+            # update target model
             if episode % self.target_update_frequency == 0:
                 self.update_target_model()
                 self.calculate_policy()
                 print(self.policy)
                 
-                if self.converged():
+                # check for convergence of Q-values
+                if self.convergedQ(episode):
                     break
 
-            print(f"Episode: {episode + 1}, #steps: {steps}")
 
 
 # set up environment
@@ -227,3 +249,4 @@ print('\nOptimal policy:\n')
 print(agent.policy)
 plot_Q(agent.Q)
 plot_policy(agent.Q)
+plot_convergence(agent.norms)

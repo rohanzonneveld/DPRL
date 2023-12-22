@@ -93,10 +93,18 @@ def plot_policy(Q):
     ax.set_yticks(np.arange(0, size, 1))
     ax.set_aspect('equal', adjustable='box')
     ax.grid(True, which='both', linestyle='--', linewidth=0.5)
-    # plt.gca().invert_xaxis()  # Invert y-axis to match the grid representation
+    plt.gca().invert_yaxis()  # Invert y-axis to match the grid representation
 
     plt.show()
 
+def plot_convergence(norms):
+    fig, ax = plt.subplots(figsize=(8, 8))
+    episode, norm = zip(*norms)
+    ax.plot(episode, norm)
+    ax.set_xlabel('Episode')
+    ax.set_ylabel('||Q_{k+5} - Q_k||')
+    ax.set_title('Convergence of DQN')
+    plt.show()
 
 if __name__ == '__main__':
     # Sample Q-values (replace with your actual Q-values)

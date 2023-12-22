@@ -1,6 +1,7 @@
 import numpy as np
 import random
 from collections import deque
+from plot import plot_policy
 
 
 def take_action(state, action):
@@ -76,5 +77,6 @@ if __name__ == '__main__':
     policy, Q = learnQ()
     print(policy)
     print(Q)
+    plot_policy(Q)
 
 

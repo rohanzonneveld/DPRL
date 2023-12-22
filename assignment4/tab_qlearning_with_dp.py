@@ -17,7 +17,6 @@ TERMINAL_STATE = (0, COLS - 1)
 # Initialize the policy and value function (Q-values)
 policy = np.random.choice(ACTIONS, size=(ROWS, COLS))  # Random initial policy
 Q_TABLE = np.zeros((ROWS, COLS, NUM_ACTIONS))
-Q_TABLE[0,ROWS-1,:] = 1
 
 # Parameters
 DISCOUNT_FACTOR = 0.9
@@ -52,7 +51,7 @@ def policy_iteration():
                     current_q = Q_TABLE[row, col, ACTIONS.index(a)]
                     next_state = take_action(state, a)
                     
-                    reward = REWARDS[state[0], state[1]]
+                    reward = REWARDS[next_state[0], next_state[1]]
                     next_q = np.max(Q_TABLE[next_state[0], next_state[1]])
                     additional_value = (reward + DISCOUNT_FACTOR * next_q) - current_q
                 
@@ -86,4 +85,5 @@ policy_iteration()
 # Print the resulting optimal policy
 print("Optimal Policy:")
 print(policy)
+print("\nQ-table")
 print(Q_TABLE)

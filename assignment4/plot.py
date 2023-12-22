@@ -53,18 +53,7 @@ def plot_policy(Q):
     Q = np.rot90(Q, k=-1)
     V = np.max(Q, axis=2)
     policy = np.argmax(Q, axis=2)
-
-    # Create a grid
-    x = np.arange(0, size, 1)
-    y = np.arange(0, size, 1)
-
-    # Create meshgrid
-    X, Y = np.meshgrid(x, y)
-
-    # Flatten meshgrid to create coordinates for arrows
-    x_flat = X.flatten()
-    y_flat = Y.flatten()
-
+    
     # Width and height of the arrows
     dx = dy = 0.8
 
